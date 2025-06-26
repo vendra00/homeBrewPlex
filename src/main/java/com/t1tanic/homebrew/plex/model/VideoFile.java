@@ -17,10 +17,12 @@ public class VideoFile extends MediaFile {
     // Example additional field
     @Column(length = 255)
     private String title;
-    @Column(length = 10)
-    private String resolution;
+    @Column
+    private Integer releaseYear;
     @Enumerated(EnumType.STRING)// e.g., 1080p, 4K
     private VideoFormat format; // e.g., MP4, MKV
+    @Enumerated(EnumType.STRING)
+    private VideoResolution resolution;
 
     // You can also add duration, codec, etc. later
 }

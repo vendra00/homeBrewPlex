@@ -1,5 +1,8 @@
 package com.t1tanic.homebrew.plex.util;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class MediaUtils {
 
     public static String extractTitleFromFileName(String fileName) {
@@ -43,5 +46,21 @@ public class MediaUtils {
         return title;
     }
 
+
+    public static Integer extractYearFromFile(String fileName, String fullPath) {
+        // Try from file name first
+        Matcher matcher = Pattern.compile("(19|20)\\d{2}").matcher(fileName);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group());
+        }
+
+        // If not found, try from the path
+        matcher = Pattern.compile("(19|20)\\d{2}").matcher(fullPath);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group());
+        }
+
+        return null;
+    }
 
 }

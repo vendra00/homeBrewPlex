@@ -1,10 +1,7 @@
 package com.t1tanic.homebrew.plex.service;
 
 import com.t1tanic.homebrew.plex.dto.VideoTitleDto;
-import com.t1tanic.homebrew.plex.model.LibraryType;
-import com.t1tanic.homebrew.plex.model.MediaType;
-import com.t1tanic.homebrew.plex.model.VideoFile;
-import com.t1tanic.homebrew.plex.model.VideoFormat;
+import com.t1tanic.homebrew.plex.model.*;
 import com.t1tanic.homebrew.plex.repository.VideoFileRepository;
 import com.t1tanic.homebrew.plex.util.MediaUtils;
 import lombok.RequiredArgsConstructor;
@@ -55,9 +52,10 @@ public class VideoServiceImpl implements VideoService {
                         .size(file.length())
                         .type(MediaType.VIDEO)
                         .libraryType(libraryType)
-                        .resolution(null)
+                        .resolution(VideoResolution.fromFileNameOrPath(fullPath))
                         .format(VideoFormat.fromFileName(file.getName()))
                         .title(MediaUtils.extractTitleFromFileName(file.getName()))
+                        .releaseYear(MediaUtils.extractYearFromFile(file.getName(), fullPath))
                         .build();
 
                 repository.save(media);
