@@ -39,7 +39,6 @@ public class VideoServiceImpl implements VideoService {
                 scanRecursively(file, libraryType);
             } else if (isVideoFile(file)) {
                 String fullPath = file.getAbsolutePath();
-                String format = getExtension(file);
 
                 if (repository.existsByPathAndLibraryType(fullPath, libraryType)) {
                     log.info("Skipped (already exists): {}", fullPath);
@@ -56,6 +55,8 @@ public class VideoServiceImpl implements VideoService {
                         .format(VideoFormat.fromFileName(file.getName()))
                         .title(MediaUtils.extractTitleFromFileName(file.getName()))
                         .releaseYear(MediaUtils.extractYearFromFile(file.getName(), fullPath))
+                        .audioCodec(AudioCodec.fromString(file.getName() + " " + fullPath))
+
                         .build();
 
                 repository.save(media);

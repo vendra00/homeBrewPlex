@@ -23,6 +23,9 @@ public class VideoFile extends MediaFile {
     private VideoFormat format; // e.g., MP4, MKV
     @Enumerated(EnumType.STRING)
     private VideoResolution resolution;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private AudioCodec audioCodec;
 
     // You can also add duration, codec, etc. later
 }
