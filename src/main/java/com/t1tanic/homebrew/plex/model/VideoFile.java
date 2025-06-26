@@ -14,13 +14,12 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class VideoFile extends MediaFile {
-    // Example additional field
     @Column(length = 255)
     private String title;
     @Column
     private Integer releaseYear;
-    @Enumerated(EnumType.STRING)// e.g., 1080p, 4K
-    private VideoFormat format; // e.g., MP4, MKV
+    @Enumerated(EnumType.STRING)
+    private VideoFormat format;
     @Enumerated(EnumType.STRING)
     private VideoResolution resolution;
     @Enumerated(EnumType.STRING)

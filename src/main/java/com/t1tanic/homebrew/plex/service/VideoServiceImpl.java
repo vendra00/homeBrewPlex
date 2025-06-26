@@ -1,5 +1,6 @@
 package com.t1tanic.homebrew.plex.service;
 
+import com.t1tanic.homebrew.plex.dto.MovieDto;
 import com.t1tanic.homebrew.plex.dto.VideoTitleDto;
 import com.t1tanic.homebrew.plex.model.*;
 import com.t1tanic.homebrew.plex.repository.VideoFileRepository;
@@ -93,6 +94,21 @@ public class VideoServiceImpl implements VideoService {
         return repository.findAllByOrderByTitleAsc()
                 .stream()
                 .map(video -> new VideoTitleDto(video.getId(), video.getTitle()))
+                .toList();
+    }
+
+    @Override
+    public List<MovieDto> getAllMovies() {
+        return repository.findAll().stream()
+                .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
+                .map(video -> new MovieDto(
+                        video.getId(),
+                        video.getTitle(),
+                        video.getReleaseYear() != null ? video.getReleaseYear() : 0,
+                        video.getFormat(),
+                        video.getResolution(),
+                        video.getAudioCodec()
+                ))
                 .toList();
     }
 }
