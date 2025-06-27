@@ -1,9 +1,12 @@
-package com.t1tanic.homebrew.plex.service;
+package com.t1tanic.homebrew.plex.service.video;
 
-import com.t1tanic.homebrew.plex.dto.MovieDto;
-import com.t1tanic.homebrew.plex.dto.VideoTitleDto;
-import com.t1tanic.homebrew.plex.model.*;
+import com.t1tanic.homebrew.plex.dto.TitleDTO;
+import com.t1tanic.homebrew.plex.dto.UnmatchedVideoDTO;
+import com.t1tanic.homebrew.plex.model.MediaFile;
+import com.t1tanic.homebrew.plex.model.enums.*;
+import com.t1tanic.homebrew.plex.model.video.VideoFile;
 import com.t1tanic.homebrew.plex.repository.VideoFileRepository;
+import com.t1tanic.homebrew.plex.service.TmdbClient;
 import com.t1tanic.homebrew.plex.util.MediaUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,16 +15,19 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class VideoServiceImpl implements VideoService {
 
+    private final TmdbClient tmdbClient;
     private final VideoFileRepository repository;
 
     @Override
-    public void scanDirectory(String folderPath, LibraryType libraryType) {
+    public void scanDirectory(String folderPath) {
+        LibraryType libraryType = LibraryType.VIDEO;
         File root = new File(folderPath);
         if (!root.exists() || !root.isDirectory()) {
             log.warn("Invalid folder: {}", folderPath);
@@ -76,40 +82,29 @@ public class VideoServiceImpl implements VideoService {
     }
 
     @Override
-    public boolean existsByPathAndLibraryType(String path, LibraryType libraryType) {
-        return repository.existsByPathAndLibraryType(path, libraryType);
-    }
-
-    private String getExtension(File file) {
-        String name = file.getName();
-        int lastDot = name.lastIndexOf('.');
-        if (lastDot != -1 && lastDot < name.length() - 1) {
-            return name.substring(lastDot + 1).toLowerCase();
-        }
-        return "unknown";
+    public void enrichMissingMetadata() {
     }
 
     @Override
-    public List<VideoTitleDto> getAllSortedByTitle() {
-        return repository.findAllByOrderByTitleAsc()
-                .stream()
-                .map(video -> new VideoTitleDto(video.getId(), video.getTitle()))
-                .toList();
-    }
-
-    @Override
-    public List<MovieDto> getAllMovies() {
+    public List<UnmatchedVideoDTO> getAllTmdbUnmatchedVideoDTOs() {
         return repository.findAll().stream()
-                .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
-                .map(video -> new MovieDto(
+                .filter(video -> Boolean.TRUE.equals(video.getTmdbMatchFailed()))
+                .map(video -> new UnmatchedVideoDTO(
                         video.getId(),
-                        video.getTitle(),
-                        video.getReleaseYear() != null ? video.getReleaseYear() : 0,
-                        video.getFormat(),
-                        video.getResolution(),
-                        video.getAudioCodec()
+                        video.getFileName(),
+                        video.getPath(),
+                        video.getTitle()
                 ))
                 .toList();
     }
+
+    @Override
+    public <T extends TitleDTO> List<T> getAllSortedByTitle(Function<MediaFile, T> mapper) {
+        return repository.findAllByOrderByTitleAsc()
+                .stream()
+                .map(mapper)
+                .toList();
+    }
+
 }
 

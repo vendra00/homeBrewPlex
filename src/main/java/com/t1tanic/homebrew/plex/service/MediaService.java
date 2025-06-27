@@ -1,12 +1,15 @@
 package com.t1tanic.homebrew.plex.service;
 
-import com.t1tanic.homebrew.plex.model.LibraryType;
+import com.t1tanic.homebrew.plex.dto.TitleDTO;
+import com.t1tanic.homebrew.plex.model.enums.LibraryType;
 import com.t1tanic.homebrew.plex.model.MediaFile;
+import com.t1tanic.homebrew.plex.model.video.VideoFile;
 
 import java.util.List;
+import java.util.function.Function;
 
 public interface MediaService<T extends MediaFile> {
-    void scanDirectory(String folderPath, LibraryType libraryType);
+    void scanDirectory(String folderPath);
     List<T> findAll();
-    boolean existsByPathAndLibraryType(String path, LibraryType libraryType);
+    <T extends TitleDTO> List<T> getAllSortedByTitle(Function<MediaFile, T> mapper);
 }

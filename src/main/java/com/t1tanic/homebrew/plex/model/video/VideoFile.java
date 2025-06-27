@@ -1,5 +1,9 @@
-package com.t1tanic.homebrew.plex.model;
+package com.t1tanic.homebrew.plex.model.video;
 
+import com.t1tanic.homebrew.plex.model.MediaFile;
+import com.t1tanic.homebrew.plex.model.enums.AudioCodec;
+import com.t1tanic.homebrew.plex.model.enums.VideoFormat;
+import com.t1tanic.homebrew.plex.model.enums.VideoResolution;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,8 +18,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class VideoFile extends MediaFile {
-    @Column(length = 255)
-    private String title;
+
     @Column
     private Integer releaseYear;
     @Enumerated(EnumType.STRING)
@@ -25,6 +28,7 @@ public class VideoFile extends MediaFile {
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private AudioCodec audioCodec;
+    @Column(name = "tmdb_match_failed")
+    private Boolean tmdbMatchFailed = false;
 
-    // You can also add duration, codec, etc. later
 }

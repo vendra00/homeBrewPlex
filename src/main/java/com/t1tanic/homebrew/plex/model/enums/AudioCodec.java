@@ -1,4 +1,4 @@
-package com.t1tanic.homebrew.plex.model;
+package com.t1tanic.homebrew.plex.model.enums;
 
 import lombok.Getter;
 

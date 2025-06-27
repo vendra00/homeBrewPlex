@@ -1,5 +1,6 @@
-package com.t1tanic.homebrew.plex.model;
+package com.t1tanic.homebrew.plex.model.audio;
 
+import com.t1tanic.homebrew.plex.model.MediaFile;
 import jakarta.persistence.Entity;
 import lombok.*;
 

@@ -1,7 +1,9 @@
 package com.t1tanic.homebrew.plex.util;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class MediaUtils {
 
@@ -61,6 +63,24 @@ public class MediaUtils {
         }
 
         return null;
+    }
+
+    public static String cleanTitleForTmdbSearch(String fileName) {
+        String cleaned = fileName.toLowerCase()
+                .replaceAll("(?i)(\\[.*?\\])", "")                          // Remove tudo entre colchetes
+                .replaceAll("(?i)animeRG|yts|rarbg|pseudo|multi[- ]?audio|dual[- ]?audio", "")
+                .replaceAll("(?i)(1080p|720p|2160p|4k|x265|x264|10bit|aac[25]?.?[01]?|opus|hdr|web|bd|hevc|bluray)", "")
+                .replaceAll("(?i)\\d{3,4}p", "")                            // Remove resolução extra
+                .replaceAll("(?i)\\.(mp4|mkv|avi)$", "")                    // Remove extensão
+                .replaceAll("[^a-zA-Z0-9\\s]", " ")                         // Remove caracteres especiais
+                .replaceAll("\\s{2,}", " ")                                 // Reduz espaços múltiplos
+                .trim();
+
+        // Capitalizar cada palavra (opcional)
+        return Arrays.stream(cleaned.split(" "))
+                .map(word -> word.isEmpty() ? "" :
+                        Character.toUpperCase(word.charAt(0)) + word.substring(1))
+                .collect(Collectors.joining(" "));
     }
 
 }
