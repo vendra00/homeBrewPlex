@@ -4,7 +4,8 @@ import com.t1tanic.homebrew.plex.dto.movie.MovieDTO;
 import com.t1tanic.homebrew.plex.dto.TitleDTO;
 import com.t1tanic.homebrew.plex.dto.UnmatchedVideoDTO;
 import com.t1tanic.homebrew.plex.model.MediaFile;
-import com.t1tanic.homebrew.plex.model.TmdbMovieResult;
+import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieDetails;
+import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieResult;
 import com.t1tanic.homebrew.plex.model.enums.*;
 import com.t1tanic.homebrew.plex.model.video.MovieFile;
 import com.t1tanic.homebrew.plex.model.video.VideoFile;
@@ -46,7 +47,17 @@ public class MovieServiceImpl implements MovieService {
                         video.getReleaseYear() != null ? video.getReleaseYear() : 0,
                         video.getFormat(),
                         video.getResolution(),
-                        video.getAudioCodec()
+                        video.getAudioCodec(),
+                        video.getDirector(),
+                        video.getRuntime(),
+                        video.getGenre(),
+                        video.getLanguage(),
+                        video.getCountry(),
+                        video.getPlot(),
+                        video.getPosterUrl(),
+                        video.getBackdropUrl(),
+                        video.getImdbId(),
+                        video.getTmdbId()
                 ))
                 .toList();
     }
@@ -67,39 +78,113 @@ public class MovieServiceImpl implements MovieService {
             int searchYear = extractedYear != null ? extractedYear :
                     movieFile.getReleaseYear() != null ? movieFile.getReleaseYear() : 0;
 
-            TmdbMovieResult tmdb = tmdbClient.searchMovieByTitleAndYear(cleanedTitle, searchYear).block();
+            TmdbMovieResult searchResult = tmdbClient.searchMovieByTitleAndYear(cleanedTitle, searchYear).block();
 
-            if (tmdb != null) {
-                log.info("Enriched metadata for '{}': {}", movieFile.getFileName(), tmdb.getTitle());
+            if (searchResult != null && searchResult.getTmdbId() != null) {
+                TmdbMovieDetails details = tmdbClient.getMovieDetails(searchResult.getTmdbId()).block();
 
-                String tmdbTitle = tmdb.getTitle();
-                if (movieFile.getTitle() == null ||
-                        "Unknown Title".equalsIgnoreCase(movieFile.getTitle()) ||
-                        !tmdbTitle.equalsIgnoreCase(movieFile.getTitle())) {
+                if (details != null) {
+                    log.info("Enriched metadata for '{}': {}", movieFile.getFileName(), details.getTitle());
 
-                    log.info("Updating title for '{}': '{}' → '{}'",
-                            movieFile.getFileName(),
-                            movieFile.getTitle(),
-                            tmdbTitle);
-                    movieFile.setTitle(tmdbTitle);
+                    if (isDifferent(movieFile.getTitle(), details.getTitle())) {
+                        movieFile.setTitle(details.getTitle());
+                    }
+
+                    int tmdbYear = MediaUtils.extractYearFromDate(details.getReleaseDate());
+                    if (tmdbYear > 0 && !Integer.valueOf(tmdbYear).equals(movieFile.getReleaseYear())) {
+                        movieFile.setReleaseYear(tmdbYear);
+                    }
+
+                    // Director from credits
+                    String director = details.getCredits() != null ? details.getCredits().getCrew().stream()
+                            .filter(c -> "Director".equalsIgnoreCase(c.getJob()))
+                            .map(TmdbMovieDetails.Crew::getName)
+                            .findFirst()
+                            .orElse(null) : null;
+
+                    if (isDifferent(movieFile.getDirector(), director)) {
+                        movieFile.setDirector(director);
+                    }
+
+                    if (details.getRuntime() != null && !details.getRuntime().equals(movieFile.getRuntime())) {
+                        movieFile.setRuntime(details.getRuntime());
+                    }
+
+                    if (details.getGenres() != null && !details.getGenres().isEmpty()) {
+                        String genreStr = details.getGenres().getFirst().getName();
+                        try {
+                            Genre parsedGenre = Genre.valueOf(genreStr.toUpperCase().replace(" ", "_"));
+                            if (!parsedGenre.equals(movieFile.getGenre())) {
+                                movieFile.setGenre(parsedGenre);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            log.warn("Unknown genre '{}' for '{}'", genreStr, movieFile.getFileName());
+                        }
+                    }
+
+                    if (details.getOriginalLanguage() != null) {
+                        try {
+                            Language parsedLanguage = Language.valueOf(details.getOriginalLanguage().toUpperCase());
+                            if (!parsedLanguage.equals(movieFile.getLanguage())) {
+                                movieFile.setLanguage(parsedLanguage);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            log.warn("Unknown language '{}' for '{}'", details.getOriginalLanguage(), movieFile.getFileName());
+                        }
+                    }
+
+                    if (details.getProductionCountries() != null && !details.getProductionCountries().isEmpty()) {
+                        String countryStr = details.getProductionCountries().getFirst().getName();
+                        try {
+                            Country parsedCountry = Country.valueOf(countryStr.toUpperCase().replace(" ", "_"));
+                            if (!parsedCountry.equals(movieFile.getCountry())) {
+                                movieFile.setCountry(parsedCountry);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            log.warn("Unknown country '{}' for '{}'", countryStr, movieFile.getFileName());
+                        }
+                    }
+
+                    if (isDifferent(movieFile.getPlot(), details.getOverview())) {
+                        movieFile.setPlot(details.getOverview());
+                    }
+
+                    if (isDifferent(movieFile.getPosterUrl(), details.getPosterPath())) {
+                        movieFile.setPosterUrl(details.getPosterPath());
+                    }
+
+                    if (isDifferent(movieFile.getBackdropUrl(), details.getBackdropPath())) {
+                        movieFile.setBackdropUrl(details.getBackdropPath());
+                    }
+
+                    if (isDifferent(movieFile.getImdbId(), details.getImdbId())) {
+                        movieFile.setImdbId(details.getImdbId());
+                    }
+
+                    if (details.getId() != null && !String.valueOf(details.getId()).equals(movieFile.getTmdbId())) {
+                        movieFile.setTmdbId(String.valueOf(details.getId()));
+                    }
+
+                    movieFile.setTmdbMatchFailed(false);
+                    repository.save(movieFile);
+                } else {
+                    log.warn("No detailed metadata found for TMDb ID: {}", searchResult.getTmdbId());
+                    movieFile.setTmdbMatchFailed(true);
+                    repository.save(movieFile);
                 }
-
-                int tmdbYear = tmdb.getReleaseYear();
-                if (tmdbYear > 0 && !Integer.valueOf(tmdbYear).equals(movieFile.getReleaseYear())) {
-                    log.info("Updating release year for '{}': {} → {}", movieFile.getTitle(), movieFile.getReleaseYear(), tmdbYear);
-                    movieFile.setReleaseYear(tmdbYear);
-                }
-
-                movieFile.setTmdbMatchFailed(false); // ✅ matched successfully
-                repository.save(movieFile);
-
             } else {
                 log.warn("No match found on TMDb for '{}'", cleanedTitle);
-                movieFile.setTmdbMatchFailed(true); // ✅ mark as failed to match
+                movieFile.setTmdbMatchFailed(true);
                 repository.save(movieFile);
             }
         }
     }
+
+
+    private boolean isDifferent(String current, String updated) {
+        return updated != null && (current == null || !current.equalsIgnoreCase(updated));
+    }
+
 
     @Override
     public List<UnmatchedVideoDTO> getAllTmdbUnmatchedVideoDTOs() {

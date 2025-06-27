@@ -1,7 +1,8 @@
 package com.t1tanic.homebrew.plex.service;
 
-import com.t1tanic.homebrew.plex.model.TmdbMovieResult;
-import com.t1tanic.homebrew.plex.model.TmdbMovieSearchResponse;
+import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieDetails;
+import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieResult;
+import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieSearchResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -33,5 +34,13 @@ public class TmdbClient {
                 .retrieve()
                 .bodyToMono(TmdbMovieSearchResponse.class)
                 .mapNotNull(resp -> resp.getResults().stream().findFirst().orElse(null));
+    }
+
+    public Mono<TmdbMovieDetails> getMovieDetails(Long tmdbId) {
+        String url = String.format("/movie/%d?append_to_response=credits", tmdbId);
+        return webClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(TmdbMovieDetails.class);
     }
 }

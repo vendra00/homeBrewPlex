@@ -7,6 +7,13 @@ import java.util.stream.Collectors;
 
 public class MediaUtils {
 
+    public static int extractYearFromDate(String releaseDate) {
+        if (releaseDate != null && releaseDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            return Integer.parseInt(releaseDate.substring(0, 4));
+        }
+        return 0;
+    }
+
     public static String extractTitleFromFileName(String fileName) {
         if (fileName == null || fileName.trim().isEmpty()) {
             return "Unknown Title";

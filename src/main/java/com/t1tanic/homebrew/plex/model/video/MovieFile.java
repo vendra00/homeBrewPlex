@@ -3,6 +3,7 @@ package com.t1tanic.homebrew.plex.model.video;
 import com.t1tanic.homebrew.plex.model.enums.Country;
 import com.t1tanic.homebrew.plex.model.enums.Genre;
 import com.t1tanic.homebrew.plex.model.enums.Language;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -20,6 +21,7 @@ public class MovieFile extends VideoFile {
     private Genre genre; // e.g., "Action, Comedy"
     private Language language; // e.g., "English, Spanish"
     private Country country; // e.g., "USA, UK"
+    @Column(length = 10000)
     private String plot; // Brief description of the movie's plot
     private String posterUrl; // URL to the movie's poster image
     private String backdropUrl; // URL to the movie's backdrop image

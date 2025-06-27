@@ -3,7 +3,6 @@ package com.t1tanic.homebrew.plex.controller;
 import com.t1tanic.homebrew.plex.dto.movie.MovieDTO;
 import com.t1tanic.homebrew.plex.dto.movie.MovieTitleDTO;
 import com.t1tanic.homebrew.plex.dto.UnmatchedVideoDTO;
-import com.t1tanic.homebrew.plex.model.enums.LibraryType;
 import com.t1tanic.homebrew.plex.service.video.movie.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +16,7 @@ import java.util.List;
 public class MovieController {
     private final MovieService service;
 
-    @GetMapping
+    @GetMapping("/all")
     public List<MovieDTO> getAllMovies() {
         return service.getAllMovies();
     }
@@ -44,6 +43,4 @@ public class MovieController {
         service.scanDirectory(path);
         return ResponseEntity.ok("Scan completed.");
     }
-
-
 }
