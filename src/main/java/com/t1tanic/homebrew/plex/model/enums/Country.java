@@ -52,4 +52,29 @@ public enum Country {
         this.fullName = fullName;
     }
 
+    public static Country fromFullName(String name) {
+        if (name == null) return null;
+
+        // Normalize known aliases
+        switch (name.trim().toLowerCase()) {
+            case "united states of america":
+            case "usa":
+                name = "United States";
+                break;
+            case "united kingdom":
+            case "uk":
+                name = "United Kingdom";
+                break;
+            // Add more aliases if needed
+        }
+
+        for (Country country : values()) {
+            if (country.fullName.equalsIgnoreCase(name)) {
+                return country;
+            }
+        }
+
+        return null;
+    }
+
 }
