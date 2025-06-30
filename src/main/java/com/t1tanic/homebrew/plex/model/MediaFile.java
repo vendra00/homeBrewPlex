@@ -17,12 +17,12 @@ public abstract class MediaFile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 255)
+    @Column()
     private String title;
 
     private String fileName;
 
-    @Column(length = 1024, nullable = false, unique = true)
+    @Column(length = 2048, nullable = false)
     private String path;
 
     private long size;
