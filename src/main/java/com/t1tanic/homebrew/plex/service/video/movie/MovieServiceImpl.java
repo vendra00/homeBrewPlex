@@ -17,9 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -50,7 +50,7 @@ public class MovieServiceImpl implements MovieService {
                         video.getAudioCodec(),
                         video.getDirector(),
                         video.getRuntime(),
-                        video.getGenre(),
+                        video.getGenres(),
                         video.getLanguage(),
                         video.getCountry(),
                         video.getPlot(),
@@ -64,6 +64,8 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public void enrichMissingMetadata() {
+        final String baseImageUrl = "https://image.tmdb.org/t/p/original";
+
         List<MovieFile> filesToEnrich = repository.findAll().stream()
                 .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
                 .toList();
@@ -78,105 +80,113 @@ public class MovieServiceImpl implements MovieService {
             int searchYear = extractedYear != null ? extractedYear :
                     movieFile.getReleaseYear() != null ? movieFile.getReleaseYear() : 0;
 
-            TmdbMovieResult searchResult = tmdbClient.searchMovieByTitleAndYear(cleanedTitle, searchYear).block();
+            TmdbMovieResult searchResult = tmdbClient.searchMovieByTitle(cleanedTitle).block();
 
-            if (searchResult != null && searchResult.getTmdbId() != null) {
-                TmdbMovieDetails details = tmdbClient.getMovieDetails(searchResult.getTmdbId()).block();
+            if (searchResult == null && searchYear > 0) {
+                log.warn("🔄 Retrying TMDb search for '{}' without year", cleanedTitle);
+                searchResult = tmdbClient.searchMovieByTitle(cleanedTitle).block();
+            }
 
-                if (details != null) {
-                    log.info("Enriched metadata for '{}': {}", movieFile.getFileName(), details.getTitle());
-
-                    if (isDifferent(movieFile.getTitle(), details.getTitle())) {
-                        movieFile.setTitle(details.getTitle());
-                    }
-
-                    int tmdbYear = MediaUtils.extractYearFromDate(details.getReleaseDate());
-                    if (tmdbYear > 0 && !Integer.valueOf(tmdbYear).equals(movieFile.getReleaseYear())) {
-                        movieFile.setReleaseYear(tmdbYear);
-                    }
-
-                    // Director from credits
-                    String director = details.getCredits() != null ? details.getCredits().getCrew().stream()
-                            .filter(c -> "Director".equalsIgnoreCase(c.getJob()))
-                            .map(TmdbMovieDetails.Crew::getName)
-                            .findFirst()
-                            .orElse(null) : null;
-
-                    if (isDifferent(movieFile.getDirector(), director)) {
-                        movieFile.setDirector(director);
-                    }
-
-                    if (details.getRuntime() != null && !details.getRuntime().equals(movieFile.getRuntime())) {
-                        movieFile.setRuntime(details.getRuntime());
-                    }
-
-                    if (details.getGenres() != null && !details.getGenres().isEmpty()) {
-                        String genreStr = details.getGenres().getFirst().getName();
-                        try {
-                            Genre parsedGenre = Genre.valueOf(genreStr.toUpperCase().replace(" ", "_"));
-                            if (!parsedGenre.equals(movieFile.getGenre())) {
-                                movieFile.setGenre(parsedGenre);
-                            }
-                        } catch (IllegalArgumentException e) {
-                            log.warn("Unknown genre '{}' for '{}'", genreStr, movieFile.getFileName());
-                        }
-                    }
-
-                    if (details.getOriginalLanguage() != null) {
-                        try {
-                            Language parsedLanguage = Language.valueOf(details.getOriginalLanguage().toUpperCase());
-                            if (!parsedLanguage.equals(movieFile.getLanguage())) {
-                                movieFile.setLanguage(parsedLanguage);
-                            }
-                        } catch (IllegalArgumentException e) {
-                            log.warn("Unknown language '{}' for '{}'", details.getOriginalLanguage(), movieFile.getFileName());
-                        }
-                    }
-
-                    if (details.getProductionCountries() != null && !details.getProductionCountries().isEmpty()) {
-                        String countryStr = details.getProductionCountries().getFirst().getName();
-                        try {
-                            Country parsedCountry = Country.valueOf(countryStr.toUpperCase().replace(" ", "_"));
-                            if (!parsedCountry.equals(movieFile.getCountry())) {
-                                movieFile.setCountry(parsedCountry);
-                            }
-                        } catch (IllegalArgumentException e) {
-                            log.warn("Unknown country '{}' for '{}'", countryStr, movieFile.getFileName());
-                        }
-                    }
-
-                    if (isDifferent(movieFile.getPlot(), details.getOverview())) {
-                        movieFile.setPlot(details.getOverview());
-                    }
-
-                    if (isDifferent(movieFile.getPosterUrl(), details.getPosterPath())) {
-                        movieFile.setPosterUrl(details.getPosterPath());
-                    }
-
-                    if (isDifferent(movieFile.getBackdropUrl(), details.getBackdropPath())) {
-                        movieFile.setBackdropUrl(details.getBackdropPath());
-                    }
-
-                    if (isDifferent(movieFile.getImdbId(), details.getImdbId())) {
-                        movieFile.setImdbId(details.getImdbId());
-                    }
-
-                    if (details.getId() != null && !String.valueOf(details.getId()).equals(movieFile.getTmdbId())) {
-                        movieFile.setTmdbId(String.valueOf(details.getId()));
-                    }
-
-                    movieFile.setTmdbMatchFailed(false);
-                    repository.save(movieFile);
-                } else {
-                    log.warn("No detailed metadata found for TMDb ID: {}", searchResult.getTmdbId());
-                    movieFile.setTmdbMatchFailed(true);
-                    repository.save(movieFile);
-                }
-            } else {
-                log.warn("No match found on TMDb for '{}'", cleanedTitle);
+            if (searchResult == null || searchResult.getTmdbId() == null) {
+                log.warn("❌ No match found on TMDb for '{}'", cleanedTitle);
                 movieFile.setTmdbMatchFailed(true);
                 repository.save(movieFile);
+                continue;
             }
+
+            TmdbMovieDetails details = tmdbClient.getMovieDetails(searchResult.getTmdbId()).block();
+
+            if (details == null) {
+                log.warn("⚠️ No detailed metadata found for TMDb ID: {}", searchResult.getTmdbId());
+                movieFile.setTmdbMatchFailed(true);
+                repository.save(movieFile);
+                continue;
+            }
+
+            log.info("📝 TMDb Movie found: [title='{}', year={}, id={}, imdbId={}, genres={}]",
+                    details.getTitle(),
+                    details.getReleaseDate(),
+                    details.getId(),
+                    details.getImdbId(),
+                    details.getGenres().stream().map(TmdbMovieDetails.Genre::getName).collect(Collectors.joining(", "))
+            );
+
+            log.info("🎬 Enriched metadata for '{}': {}", movieFile.getFileName(), details.getTitle());
+
+            // Title
+            if (isDifferent(movieFile.getTitle(), details.getTitle())) {
+                movieFile.setTitle(details.getTitle());
+            }
+
+            // Plot / Overview
+            if (isDifferent(movieFile.getPlot(), details.getOverview())) {
+                movieFile.setPlot(details.getOverview());
+            }
+
+            // Runtime
+            Optional.ofNullable(details.getRuntime())
+                    .filter(runtime -> runtime > 0)
+                    .ifPresent(movieFile::setRuntime);
+
+            // Director
+            if (details.getCredits() != null) {
+                details.getCredits().getCrew().stream()
+                        .filter(c -> "Director".equalsIgnoreCase(c.getJob()))
+                        .map(TmdbMovieDetails.Crew::getName)
+                        .findFirst()
+                        .ifPresent(movieFile::setDirector);
+            }
+
+            // Genre
+            if (details.getGenres() != null && !details.getGenres().isEmpty()) {
+                Set<Genre> genres = details.getGenres().stream()
+                        .map(TmdbMovieDetails.Genre::getName)
+                        .map(Genre::fromTmdbName)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+                movieFile.setGenres(genres);
+            }
+
+            // Language
+            details.getSpokenLanguages().stream()
+                    .map(TmdbMovieDetails.SpokenLanguage::getEnglishName)
+                    .map(Language::fromEnglishName)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .ifPresentOrElse(
+                            movieFile::setLanguage,
+                            () -> log.warn("⚠️ Unrecognized language in '{}'", details.getSpokenLanguages().getFirst().getEnglishName())
+                    );
+
+            // Country
+            details.getProductionCountries().stream()
+                    .map(TmdbMovieDetails.ProductionCountry::getName)
+                    .map(Country::fromFullName)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .ifPresentOrElse(
+                            movieFile::setCountry,
+                            () -> {
+                                if (!details.getProductionCountries().isEmpty()) {
+                                    log.warn("⚠️ Unrecognized country in '{}'", details.getProductionCountries().getFirst().getName());
+                                } else {
+                                    log.warn("⚠️ No production countries found for TMDb ID {}", details.getId());
+                                }
+                            }
+                    );
+
+            // Poster & Backdrop
+            Optional.ofNullable(details.getPosterPath()).ifPresent(path -> movieFile.setPosterUrl(baseImageUrl + path));
+            Optional.ofNullable(details.getBackdropPath()).ifPresent(path -> movieFile.setBackdropUrl(baseImageUrl + path));
+
+            // IMDb ID
+            Optional.ofNullable(details.getImdbId()).ifPresent(movieFile::setImdbId);
+
+            // TMDb ID
+            movieFile.setTmdbId(String.valueOf(details.getId()));
+
+            movieFile.setTmdbMatchFailed(false);
+            repository.save(movieFile);
         }
     }
 
@@ -184,7 +194,6 @@ public class MovieServiceImpl implements MovieService {
     private boolean isDifferent(String current, String updated) {
         return updated != null && (current == null || !current.equalsIgnoreCase(updated));
     }
-
 
     @Override
     public List<UnmatchedVideoDTO> getAllTmdbUnmatchedVideoDTOs() {

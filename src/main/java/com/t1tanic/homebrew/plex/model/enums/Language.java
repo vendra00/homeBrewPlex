@@ -21,5 +21,13 @@ public enum Language {
         this.code = code;
         this.name = name;
     }
-
+    public static Language fromEnglishName(String name) {
+        if (name == null) return null;
+        for (Language lang : values()) {
+            if (lang.name.equalsIgnoreCase(name)) {
+                return lang;
+            }
+        }
+        return null;
+    }
 }

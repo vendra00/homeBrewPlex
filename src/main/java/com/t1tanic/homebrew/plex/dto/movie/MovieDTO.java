@@ -2,6 +2,8 @@ package com.t1tanic.homebrew.plex.dto.movie;
 
 import com.t1tanic.homebrew.plex.model.enums.*;
 
+import java.util.Set;
+
 public record MovieDTO (
         Long id,
         String title,
@@ -11,7 +13,7 @@ public record MovieDTO (
         AudioCodec audioCodec,
         String director,
         Integer runtime,
-        Genre genre,
+        Set<Genre> genres,
         Language language,
         Country country,
         String plot,

@@ -1,5 +1,7 @@
 package com.t1tanic.homebrew.plex.model.tmdb;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.t1tanic.homebrew.plex.util.MediaUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,26 +10,33 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TmdbMovieResult {
+
     private String title;
+
     private String overview;
+
+    @JsonProperty("release_date")
     private String releaseDate; // format: yyyy-MM-dd
+
+    @JsonProperty("vote_average")
     private double voteAverage;
+
+    @JsonProperty("poster_path")
     private String posterPath;
 
-    // Enrichment metadata fields
+    // Enrichment metadata fields (custom - not part of TMDb API responses)
     private String director;
-    private Integer runtime;          // in minutes
-    private String genre;             // comma-separated genres
-    private String language;          // ISO or English name
-    private String country;           // production country name
+    private Integer runtime;
+    private String genre;
+    private String language;
+    private String country;
     private String backdropUrl;
     private String imdbId;
+
+    @JsonProperty("id")
     private Long tmdbId;
 
     public int getReleaseYear() {
-        if (releaseDate != null && releaseDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            return Integer.parseInt(releaseDate.substring(0, 4));
-        }
-        return 0;
+        return MediaUtils.extractYearFromDate(releaseDate);
     }
 }
