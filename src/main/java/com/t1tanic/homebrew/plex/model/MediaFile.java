@@ -17,7 +17,7 @@ public abstract class MediaFile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 255)
+    @Column()
     private String title;
 
     private String fileName;
