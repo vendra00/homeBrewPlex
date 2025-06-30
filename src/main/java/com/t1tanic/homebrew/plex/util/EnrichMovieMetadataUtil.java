@@ -17,9 +17,7 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class EnrichMovieMetadataUtil {
 
-    private static final String BASE_IMAGE_URL = "https://image.tmdb.org/t/p/original";
-
-    public void applyTmdbMetadata(MovieFile movieFile, TmdbMovieDetails details) {
+    public void applyTmdbMetadata(MovieFile movieFile, TmdbMovieDetails details, String baseUrl) {
         logMetadataInfo(details);
 
         setIfDifferent(movieFile::setTitle, movieFile.getTitle(), details.getTitle());
@@ -38,8 +36,8 @@ public class EnrichMovieMetadataUtil {
         applyOptional(details.getProductionCountries(), EnrichMovieMetadataUtil::extractCountry)
                 .ifPresentOrElse(movieFile::setCountry, () -> warnMissingCountry(details));
 
-        Optional.ofNullable(details.getPosterPath()).ifPresent(path -> movieFile.setPosterUrl(BASE_IMAGE_URL + path));
-        Optional.ofNullable(details.getBackdropPath()).ifPresent(path -> movieFile.setBackdropUrl(BASE_IMAGE_URL + path));
+        Optional.ofNullable(details.getPosterPath()).ifPresent(path -> movieFile.setPosterUrl(baseUrl + path));
+        Optional.ofNullable(details.getBackdropPath()).ifPresent(path -> movieFile.setBackdropUrl(baseUrl + path));
         Optional.ofNullable(details.getImdbId()).ifPresent(movieFile::setImdbId);
 
         movieFile.setTmdbId(String.valueOf(details.getId()));

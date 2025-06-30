@@ -1,11 +1,10 @@
 package com.t1tanic.homebrew.plex.service;
 
+import com.t1tanic.homebrew.plex.config.TmdbProperties;
 import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieDetails;
 import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieResult;
 import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieSearchResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -14,16 +13,20 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TmdbClient {
 
-    private final WebClient webClient = WebClient.builder()
-            .baseUrl("https://api.themoviedb.org/3")
-            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-            .build();
+    private final WebClient webClient;
+    private final String apiKey;
 
-    @Value("${tmdb.api.key}")
-    private String apiKey;
+    public TmdbClient(TmdbProperties tmdbProperties) {
+        this.apiKey = tmdbProperties.getApiKey();
+        this.webClient = WebClient.builder()
+                .baseUrl(tmdbProperties.getBaseUrl())
+                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+
+        log.info("✅ TMDb WebClient initialized with base URL: {}", tmdbProperties.getBaseUrl());
+    }
 
     public Mono<TmdbMovieResult> searchMovieByTitle(String title) {
         log.debug("🔍 Searching TMDb for title='{}'", title);
@@ -51,8 +54,6 @@ public class TmdbClient {
                                     r.getCountry(),
                                     r.getOverview() != null ? r.getOverview().substring(0, Math.min(120, r.getOverview().length())) + "..." : "N/A")
                     );
-
-                    String normalizedInput = title.trim().toLowerCase();
 
                     return resp.getResults().stream()
                             .filter(r -> r.getTitle() != null && r.getTitle().trim().equalsIgnoreCase(title))

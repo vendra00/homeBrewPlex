@@ -1,5 +1,6 @@
 package com.t1tanic.homebrew.plex.service.video.movie;
 
+import com.t1tanic.homebrew.plex.config.TmdbProperties;
 import com.t1tanic.homebrew.plex.dto.movie.MovieDTO;
 import com.t1tanic.homebrew.plex.dto.TitleDTO;
 import com.t1tanic.homebrew.plex.dto.UnmatchedVideoDTO;
@@ -28,6 +29,7 @@ public class MovieServiceImpl implements MovieService {
 
     private final TmdbClient tmdbClient;
     private final MovieFileRepository repository;
+    private final TmdbProperties tmdbProperties;
 
     @Override
     public <T extends TitleDTO> List<T> getAllSortedByTitle(Function<MediaFile, T> mapper) {
@@ -64,6 +66,7 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public void enrichMissingMetadata() {
+        String baseUrl = tmdbProperties.getBaseImageUrl();
         List<MovieFile> filesToEnrich = repository.findAll().stream()
                 .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
                 .toList();
@@ -83,7 +86,7 @@ public class MovieServiceImpl implements MovieService {
             }
 
             log.info("🎬 Enriched metadata for '{}': {}", movieFile.getFileName(), details.getTitle());
-            EnrichMovieMetadataUtil.applyTmdbMetadata(movieFile, details);
+            EnrichMovieMetadataUtil.applyTmdbMetadata(movieFile, details, baseUrl);
             repository.save(movieFile);
         }
     }
