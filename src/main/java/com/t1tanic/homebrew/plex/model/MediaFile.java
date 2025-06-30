@@ -22,7 +22,7 @@ public abstract class MediaFile {
 
     private String fileName;
 
-    @Column(length = 1024, nullable = false, unique = true)
+    @Column(length = 2048, nullable = false)
     private String path;
 
     private long size;

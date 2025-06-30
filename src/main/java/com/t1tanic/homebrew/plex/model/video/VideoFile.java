@@ -5,19 +5,19 @@ import com.t1tanic.homebrew.plex.model.enums.AudioCodec;
 import com.t1tanic.homebrew.plex.model.enums.VideoFormat;
 import com.t1tanic.homebrew.plex.model.enums.VideoResolution;
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.MappedSuperclass;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-@Entity
+@SuperBuilder
+@MappedSuperclass
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class VideoFile extends MediaFile {
+public abstract class VideoFile extends MediaFile {
 
     @Column
     private Integer releaseYear;
