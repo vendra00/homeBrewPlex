@@ -11,4 +11,5 @@ public class TmdbProperties {
     private String apiKey;
     private String baseUrl;
     private String baseImageUrl;
+
 }
