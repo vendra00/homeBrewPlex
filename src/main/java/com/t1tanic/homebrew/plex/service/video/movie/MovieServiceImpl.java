@@ -4,6 +4,7 @@ import com.t1tanic.homebrew.plex.config.TmdbProperties;
 import com.t1tanic.homebrew.plex.dto.movie.MovieDTO;
 import com.t1tanic.homebrew.plex.dto.TitleDTO;
 import com.t1tanic.homebrew.plex.dto.UnmatchedVideoDTO;
+import com.t1tanic.homebrew.plex.mapper.MovieMapper;
 import com.t1tanic.homebrew.plex.model.MediaFile;
 import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieDetails;
 import com.t1tanic.homebrew.plex.model.tmdb.TmdbMovieResult;
@@ -14,6 +15,7 @@ import com.t1tanic.homebrew.plex.repository.MovieFileRepository;
 import com.t1tanic.homebrew.plex.service.TmdbClient;
 import com.t1tanic.homebrew.plex.util.EnrichMovieMetadataUtil;
 import com.t1tanic.homebrew.plex.util.MediaUtils;
+import com.t1tanic.homebrew.plex.util.VideoUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,33 @@ public class MovieServiceImpl implements MovieService {
                         video.getImdbId(),
                         video.getTmdbId()
                 ))
+                .toList();
+    }
+
+    @Override
+    public List<MovieDTO> getAllMoviesByDirector(String director) {
+        return repository.findAll().stream()
+                .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
+                .filter(v -> v.getDirector() != null && v.getDirector().equalsIgnoreCase(director))
+                .map(MovieMapper::toDTO)
+                .toList();
+    }
+
+    @Override
+    public List<MovieDTO> getAllMoviesByCountry(Country country) {
+        return repository.findAll().stream()
+                .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
+                .filter(v -> v.getCountry() != null && v.getCountry().equals(country))
+                .map(MovieMapper::toDTO)
+                .toList();
+    }
+
+    @Override
+    public List<MovieDTO> getAllMoviesByReleaseYear(Integer year) {
+        return repository.findAll().stream()
+                .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
+                .filter(v -> v.getReleaseYear() != null && v.getReleaseYear().equals(year))
+                .map(MovieMapper::toDTO)
                 .toList();
     }
 
@@ -118,7 +147,7 @@ public class MovieServiceImpl implements MovieService {
             return;
         }
 
-        scanRecursively(root, libraryType);
+        VideoUtils.scanRecursively(root, libraryType, repository);
     }
 
     @Override
@@ -126,57 +155,4 @@ public class MovieServiceImpl implements MovieService {
         return List.of();
     }
 
-    private void scanRecursively(File dir, LibraryType libraryType) {
-        File[] files = dir.listFiles();
-        if (files == null) return;
-
-        Arrays.stream(files).forEach(file -> {
-            if (file.isDirectory()) {
-                scanRecursively(file, libraryType);
-            } else if (isVideoFile(file)) {
-                String fullPath = file.getAbsolutePath();
-
-                if (repository.existsByPathAndLibraryType(fullPath, libraryType)) {
-                    log.info("Skipped (already exists): {}", fullPath);
-                    return;
-                }
-
-                MovieFile movie = MovieFile.builder()
-                        .fileName(file.getName())
-                        .path(fullPath)
-                        .size(file.length())
-                        .type(MediaType.VIDEO)
-                        .libraryType(libraryType)
-                        .resolution(VideoResolution.fromFileNameOrPath(fullPath))
-                        .format(VideoFormat.fromFileName(file.getName()))
-                        .title(MediaUtils.extractTitleFromFileName(file.getName()))
-                        .releaseYear(MediaUtils.extractYearFromFile(file.getName(), fullPath))
-                        .audioCodec(AudioCodec.fromString(file.getName() + " " + fullPath))
-
-                        .build();
-
-                repository.save(movie);
-                log.info("Indexed: {}", movie.getPath());
-            }
-        });
-    }
-
-    private boolean isVideoFile(File file) {
-        return VideoFormat.isVideoExtension(file.getName());
-    }
-
-    @Override
-    public List<MovieDTO> getAllMoviesByDirector() {
-        return List.of();
-    }
-
-    @Override
-    public List<MovieDTO> getAllMoviesByCountry() {
-        return List.of();
-    }
-
-    @Override
-    public List<MovieDTO> getAllMoviesByReleaseYear() {
-        return List.of();
-    }
 }

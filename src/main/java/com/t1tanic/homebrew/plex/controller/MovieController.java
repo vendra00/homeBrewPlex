@@ -3,6 +3,7 @@ package com.t1tanic.homebrew.plex.controller;
 import com.t1tanic.homebrew.plex.dto.movie.MovieDTO;
 import com.t1tanic.homebrew.plex.dto.movie.MovieTitleDTO;
 import com.t1tanic.homebrew.plex.dto.UnmatchedVideoDTO;
+import com.t1tanic.homebrew.plex.model.enums.Country;
 import com.t1tanic.homebrew.plex.service.video.movie.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -42,5 +43,20 @@ public class MovieController {
     public ResponseEntity<String> scanFolder(@RequestParam String path) {
         service.scanDirectory(path);
         return ResponseEntity.ok("Scan completed.");
+    }
+
+    @GetMapping("/by-director")
+    public ResponseEntity<List<MovieDTO>> getMoviesByDirector(@RequestParam String director) {
+        return ResponseEntity.ok(service.getAllMoviesByDirector(director));
+    }
+
+    @GetMapping("/by-country")
+    public ResponseEntity<List<MovieDTO>> getMoviesByCountry(@RequestParam Country country) {
+        return ResponseEntity.ok(service.getAllMoviesByCountry(country));
+    }
+
+    @GetMapping("/by-release-year")
+    public ResponseEntity<List<MovieDTO>> getMoviesByReleaseYear(@RequestParam Integer year) {
+        return ResponseEntity.ok(service.getAllMoviesByReleaseYear(year));
     }
 }
