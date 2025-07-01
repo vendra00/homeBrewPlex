@@ -4,6 +4,7 @@ import com.t1tanic.homebrew.plex.dto.movie.MovieDTO;
 import com.t1tanic.homebrew.plex.dto.movie.MovieTitleDTO;
 import com.t1tanic.homebrew.plex.dto.UnmatchedVideoDTO;
 import com.t1tanic.homebrew.plex.model.enums.Country;
+import com.t1tanic.homebrew.plex.model.video.VideoFile;
 import com.t1tanic.homebrew.plex.service.video.movie.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,11 @@ public class MovieController {
     @GetMapping("/all")
     public List<MovieDTO> getAllMovies() {
         return service.getAllMovies();
+    }
+
+    @GetMapping("/all-generic")
+    public List<VideoFile> findAll() {
+        return service.findAll();
     }
 
     @GetMapping("/enrich")

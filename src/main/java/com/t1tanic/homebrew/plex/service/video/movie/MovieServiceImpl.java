@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -46,7 +47,6 @@ public class MovieServiceImpl implements MovieService {
         return repository.findAll().stream()
                 .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
                 .map(video -> new MovieDTO(
-                        video.getId(),
                         video.getTitle(),
                         video.getReleaseYear() != null ? video.getReleaseYear() : 0,
                         video.getFormat(),
@@ -59,9 +59,7 @@ public class MovieServiceImpl implements MovieService {
                         video.getCountry(),
                         video.getPlot(),
                         video.getPosterUrl(),
-                        video.getBackdropUrl(),
-                        video.getImdbId(),
-                        video.getTmdbId()
+                        video.getBackdropUrl()
                 ))
                 .toList();
     }
@@ -152,7 +150,10 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public List<VideoFile> findAll() {
-        return List.of();
+        return repository.findAll().stream()
+                .filter(Objects::nonNull)
+                .filter(v -> v.getLibraryType() == LibraryType.MOVIE)
+                .collect(Collectors.toList());
     }
 
 }

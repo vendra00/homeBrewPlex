@@ -5,7 +5,6 @@ import com.t1tanic.homebrew.plex.model.enums.*;
 import java.util.Set;
 
 public record MovieDTO (
-        Long id,
         String title,
         int releaseYear,
         VideoFormat videoFormat,
@@ -18,7 +17,5 @@ public record MovieDTO (
         Country country,
         String plot,
         String posterUrl,
-        String backdropUrl,
-        String imdbId,
-        String tmdbId)
+        String backdropUrl)
 {}
