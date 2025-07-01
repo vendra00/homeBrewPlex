@@ -1,6 +1,7 @@
 package com.t1tanic.homebrew.plex.service.video.movie;
 
 import com.t1tanic.homebrew.plex.dto.movie.MovieDTO;
+import com.t1tanic.homebrew.plex.model.enums.Country;
 import com.t1tanic.homebrew.plex.service.video.VideoService;
 
 import java.util.List;
@@ -18,20 +19,22 @@ public interface MovieService extends VideoService {
     List<MovieDTO> getAllMovies();
 
     /**
-     * Fetches all movies sorted by title.
-     * @return A list of MovieDTO objects filtered by director..
+     * Enriches missing metadata for movies using TMDB.
+     * This method will fetch additional information from TMDB and update the movie records accordingly.
      */
-    List<MovieDTO> getAllMoviesByDirector();
+    List<MovieDTO> getAllMoviesByDirector(String director);
 
     /**
-     * Fetches all movies sorted by country.
-     * @return A list of MovieDTO objects filtered by country.
+     * Fetches all movies by a specific country.
+     * @param country The country to filter movies by.
+     * @return A list of MovieDTO objects filtered by the specified country.
      */
-    List<MovieDTO> getAllMoviesByCountry();
+    List<MovieDTO> getAllMoviesByCountry(Country country);
 
     /**
-     * Fetches all movies sorted by release year.
-     * @return A list of MovieDTO objects filtered by release year.
+     * Fetches all movies released in a specific year.
+     * @param year The release year to filter movies by.
+     * @return A list of MovieDTO objects filtered by the specified release year.
      */
-    List<MovieDTO> getAllMoviesByReleaseYear();
+    List<MovieDTO> getAllMoviesByReleaseYear(Integer year);
 }
