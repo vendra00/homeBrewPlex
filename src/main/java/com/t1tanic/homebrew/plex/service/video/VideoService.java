@@ -9,5 +9,4 @@ import java.util.List;
 public interface VideoService extends MediaService<VideoFile> {
     void enrichMissingMetadata();
     List<UnmatchedVideoDTO> getAllTmdbUnmatchedVideoDTOs();
-
 }
